@@ -35,10 +35,8 @@ import android.util.Patterns;
 import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.SmsApplication;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -863,30 +861,6 @@ public final class Telephony {
              * @hide
              */
             public static final int RESULT_SMS_BLACKLISTED_REGEX = 8;
-
-            /**
-             * Used internally:
-             * Broadcast Action: A new protected text-based SMS message has been received
-             * by the device. This intent will be delivered to all registered
-             * receivers who possess {@link android.Manifest.permission#RECEIVE_PROTECTED_SMS}.
-             * These apps SHOULD NOT write the message or notify the user.
-             * The intent will have the following extra values:
-             * </p>
-             *
-             * <ul>
-             *   <li><em>"pdus"</em> - An Object[] of byte[]s containing the PDUs
-             *   that make up the message.</li>
-             * </ul>
-             *
-             * <p>The extra values can be extracted using
-             * {@link #getMessagesFromIntent(Intent)}.</p>
-             *
-             * <p>If a BroadcastReceiver encounters an error while processing
-             * this intent it should set the result code appropriately.</p>
-             * @hide
-             */
-            public static final String PROTECTED_SMS_RECEIVED_ACTION =
-                    "android.provider.Telephony.ACTION_PROTECTED_SMS_RECEIVED";
 
             /**
              * Activity action: Ask the user to change the default
