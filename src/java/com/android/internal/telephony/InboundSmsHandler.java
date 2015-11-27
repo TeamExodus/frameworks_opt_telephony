@@ -69,6 +69,8 @@ import android.text.TextUtils;
 
 import com.android.internal.telephony.uicc.UiccCard;
 import com.android.internal.telephony.uicc.UiccController;
+import com.android.internal.telephony.util.BlacklistUtils;
+import com.android.internal.telephony.PhoneBase;
 import com.android.internal.util.HexDump;
 import com.android.internal.util.State;
 import com.android.internal.util.StateMachine;
