@@ -556,7 +556,6 @@ public class DctController extends Handler {
     }
 
     protected int getTopPriorityRequestPhoneId() {
-    private int getTopPriorityRequestPhoneId() {
         String topSubId = null;
         int priority = -1;
         int subId;
