@@ -44,6 +44,9 @@ import com.android.internal.telephony.PhoneConstants;
 import com.android.internal.telephony.PhoneProxy;
 import com.android.internal.telephony.SubscriptionController;
 import com.android.internal.telephony.dataconnection.DcSwitchAsyncChannel.RequestInfo;
+import com.android.internal.telephony.uicc.IccCardStatus;
+import com.android.internal.telephony.uicc.UiccCard;
+import com.android.internal.telephony.uicc.UiccController;
 import com.android.internal.util.AsyncChannel;
 import com.android.internal.util.IndentingPrintWriter;
 
@@ -575,9 +578,21 @@ public class DctController extends Handler {
 
     private void onSubInfoReady() {
         logd("onSubInfoReady mPhoneNum=" + mPhoneNum);
+        UiccController uiccController = UiccController.getInstance();
         for (int i = 0; i < mPhoneNum; ++i) {
+            UiccCard card = uiccController.getUiccCard(i);
             int subId = mPhones[i].getSubId();
             logd("onSubInfoReady handle pending requests subId=" + subId);
+            if ((card == null) || (card.getCardState() ==
+                    IccCardStatus.CardState.CARDSTATE_ABSENT)) {
+                logd("onSubInfoReady: SIM card absent on phoneId = " + i);
+                PhoneBase phoneBase = (PhoneBase)mPhones[i].getActivePhone();
+                DcTrackerBase dcTracker = phoneBase.mDcTracker;
+                if (dcTracker.isApnTypeActive(PhoneConstants.APN_TYPE_DEFAULT)) {
+                    logd("onSubInfoReady: reset INTERNET request as SIM has been removed");
+                    deactivateDdsRequests();
+                }
+            }
             mNetworkFilter[i].setNetworkSpecifier(String.valueOf(subId));
             ((DctController.TelephonyNetworkFactory)mNetworkFactory[i]).evalPendingRequest();
         }
