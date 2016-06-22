@@ -908,6 +908,7 @@ public class ImsPhoneConnection extends Connection {
      * @param extras The ImsCallProfile extras.
      */
     private void updateWifiStateFromExtras(Bundle extras) {
+        // Google and Qualcomm have competing implementations
         if (extras.containsKey(ImsCallProfile.EXTRA_CALL_RAT_TYPE)) {
             // The RIL (sadly) sends us the EXTRA_CALL_RAT_TYPE as a string extra, rather than an
             // integer extra, so we need to parse it.
