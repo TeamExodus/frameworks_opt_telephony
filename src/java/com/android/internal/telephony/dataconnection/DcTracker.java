@@ -135,8 +135,6 @@ public class DcTracker extends DcTrackerBase {
 
     static final Uri PREFERAPN_NO_UPDATE_URI_USING_SUBID =
                         Uri.parse("content://telephony/carriers/preferapn_no_update/subId/");
-    static final Uri PREFERAPN_NO_UPDATE_URI_USING_SUBID_IMSI =
-            Uri.parse("content://telephony/carriers/preferapn_no_update/subIdImsi/");
     static final String APN_ID = "apn_id";
 
     /**
@@ -1012,21 +1010,19 @@ public class DcTracker extends DcTrackerBase {
 
         if (!TextUtils.isEmpty(reason)) {
             specificdisable = reason.equals(Phone.REASON_DATA_SPECIFIC_DISABLED)
-                    || reason.equals(Phone.REASON_ROAMING_ON)
-                    || reason.equals(Phone.REASON_SINGLE_PDN_ARBITRATION);
+                    || reason.equals(Phone.REASON_ROAMING_ON);
         }
 
         for (ApnContext apnContext : mApnContexts.values()) {
+            if (apnContext.isDisconnected() == false) didDisconnect = true;
             if (specificdisable) {
                 if (!apnContext.getApnType().equals(PhoneConstants.APN_TYPE_IMS)) {
                     if (DBG) log("ApnConextType: " + apnContext.getApnType());
-                    if (apnContext.isDisconnected() == false) didDisconnect = true;
                     apnContext.setReason(reason);
                     cleanUpConnection(tearDown, apnContext);
                 }
             } else {
                 // TODO - only do cleanup if not disconnected
-                if (apnContext.isDisconnected() == false) didDisconnect = true;
                 apnContext.setReason(reason);
                 cleanUpConnection(tearDown, apnContext);
             }
@@ -1269,9 +1265,10 @@ public class DcTracker extends DcTrackerBase {
         return apn;
     }
 
-    protected ArrayList<ApnSetting> createApnList(Cursor cursor, IccRecords r) {
+    protected ArrayList<ApnSetting> createApnList(Cursor cursor) {
         ArrayList<ApnSetting> mnoApns = new ArrayList<ApnSetting>();
         ArrayList<ApnSetting> mvnoApns = new ArrayList<ApnSetting>();
+        IccRecords r = mIccRecords.get();
 
         if (cursor.moveToFirst()) {
             do {
@@ -1375,17 +1372,15 @@ public class DcTracker extends DcTrackerBase {
                     return false;
                 }
 
-                if (!apnContext.getApnType().equals(PhoneConstants.APN_TYPE_IMS)) {
-                    // Only lower priority calls left.  Disconnect them all in this single PDP case
-                    // so that we can bring up the requested higher priority call (once we receive
-                    // repsonse for deactivate request for the calls we are about to disconnect
-                    if (cleanUpAllConnections(true, Phone.REASON_SINGLE_PDN_ARBITRATION)) {
-                        // If any call actually requested to be disconnected, means we can't
-                        // bring up this connection yet as we need to wait for those data calls
-                        // to be disconnected.
-                        if (DBG) log("setupData: Some calls are disconnecting first.  Wait and retry");
-                        return false;
-                    }
+                // Only lower priority calls left.  Disconnect them all in this single PDP case
+                // so that we can bring up the requested higher priority call (once we receive
+                // repsonse for deactivate request for the calls we are about to disconnect
+                if (cleanUpAllConnections(true, Phone.REASON_SINGLE_PDN_ARBITRATION)) {
+                    // If any call actually requested to be disconnected, means we can't
+                    // bring up this connection yet as we need to wait for those data calls
+                    // to be disconnected.
+                    if (DBG) log("setupData: Some calls are disconnecting first.  Wait and retry");
+                    return false;
                 }
 
                 // No other calls are active, so proceed
@@ -1446,12 +1441,10 @@ public class DcTracker extends DcTrackerBase {
         if (DBG) log("tryRestartDataConnections: createAllApnList and cleanUpAllConnections");
         createAllApnList();
         setInitialAttachApn();
-        if (reason.equalsIgnoreCase(Phone.REASON_APN_CHANGED)) {
-            cleanUpConnectionsOnUpdatedApns(!isDisconnected);
-        } else {
-            cleanUpAllConnections(!isDisconnected, reason);
-        }
+        cleanUpConnectionsOnUpdatedApns(!isDisconnected);
+
         // FIXME: See bug 17426028 maybe no conditional is needed.
+        cleanUpAllConnections(!isDisconnected, reason);
         setupDataOnConnectableApns(reason);
     }
 
@@ -1482,14 +1475,7 @@ public class DcTracker extends DcTrackerBase {
      * @return true if higher priority active apn found
      */
     private boolean isHigherPriorityApnContextActive(ApnContext apnContext) {
-        if (apnContext.getApnType().equals(PhoneConstants.APN_TYPE_IMS)) {
-            return false;
-        }
-
         for (ApnContext otherContext : mPrioritySortedApnContexts) {
-            if (otherContext.getApnType().equals(PhoneConstants.APN_TYPE_IMS)) {
-                continue;
-            }
             if (apnContext.getApnType().equalsIgnoreCase(otherContext.getApnType())) return false;
             if (otherContext.isEnabled() && otherContext.getState() != DctConstants.State.FAILED) {
                 return true;
@@ -1701,8 +1687,7 @@ public class DcTracker extends DcTrackerBase {
                 // can declare the DUN APN sharable by default traffic, thus still satisfying
                 // those requests and not torn down organically.
                 if ((apnContext.getApnType() == PhoneConstants.APN_TYPE_DUN && teardownForDun())
-                        || apnContext.getState() != DctConstants.State.CONNECTED
-                        || mPhone.getSubId() != SubscriptionManager.getDefaultDataSubId() ) {
+                        || apnContext.getState() != DctConstants.State.CONNECTED) {
                     cleanup = true;
                 } else {
                     cleanup = false;
@@ -2441,7 +2426,7 @@ public class DcTracker extends DcTrackerBase {
 
             if (cursor != null) {
                 if (cursor.getCount() > 0) {
-                    mAllApnSettings = createApnList(cursor, mIccRecords.get());
+                    mAllApnSettings = createApnList(cursor);
                 }
                 cursor.close();
             }
@@ -2461,7 +2446,7 @@ public class DcTracker extends DcTrackerBase {
             // TODO: What is the right behavior?
             //notifyNoData(DataConnection.FailCause.MISSING_UNKNOWN_APN);
         } else {
-            mPreferredApn = getPreferredApn(mAllApnSettings);
+            mPreferredApn = getPreferredApn();
             if (mPreferredApn != null && !mPreferredApn.numeric.equals(operator)) {
                 mPreferredApn = null;
                 setPreferredApn(-1);
@@ -2626,7 +2611,7 @@ public class DcTracker extends DcTrackerBase {
     }
 
     /** Return the DC AsyncChannel for the new data connection */
-    protected DcAsyncChannel createDataConnection() {
+    private DcAsyncChannel createDataConnection() {
         if (DBG) log("createDataConnection E");
 
         int id = mUniqueIdGenerator.getAndIncrement();
@@ -2689,7 +2674,7 @@ public class DcTracker extends DcTrackerBase {
             usePreferred = true;
         }
         if (usePreferred) {
-            mPreferredApn = getPreferredApn(mAllApnSettings);
+            mPreferredApn = getPreferredApn();
         }
         if (DBG) {
             log("buildWaitingApns: usePreferred=" + usePreferred
@@ -2764,9 +2749,7 @@ public class DcTracker extends DcTrackerBase {
         }
 
         String subId = Long.toString(mPhone.getSubId());
-        String imsi = mPhone.getSubscriberId();
-        Uri uri = Uri.withAppendedPath(PREFERAPN_NO_UPDATE_URI_USING_SUBID_IMSI, subId);
-        uri = Uri.withAppendedPath(uri, imsi);
+        Uri uri = Uri.withAppendedPath(PREFERAPN_NO_UPDATE_URI_USING_SUBID, subId);
         log("setPreferredApn: delete");
         ContentResolver resolver = mPhone.getContext().getContentResolver();
         resolver.delete(uri, null, null);
@@ -2779,16 +2762,14 @@ public class DcTracker extends DcTrackerBase {
         }
     }
 
-    protected ApnSetting getPreferredApn(ArrayList<ApnSetting> apnList) {
-        if (apnList == null || apnList.isEmpty()) {
-            log("getPreferredApn: apnList is " + ((apnList == null)?"null":"empty"));
+    protected ApnSetting getPreferredApn() {
+        if (mAllApnSettings == null || mAllApnSettings.isEmpty()) {
+            log("getPreferredApn: mAllApnSettings is " + ((mAllApnSettings == null)?"null":"empty"));
             return null;
         }
 
         String subId = Long.toString(mPhone.getSubId());
-        String imsi = mPhone.getSubscriberId();
-        Uri uri = Uri.withAppendedPath(PREFERAPN_NO_UPDATE_URI_USING_SUBID_IMSI, subId);
-        uri = Uri.withAppendedPath(uri, imsi);
+        Uri uri = Uri.withAppendedPath(PREFERAPN_NO_UPDATE_URI_USING_SUBID, subId);
         Cursor cursor = mPhone.getContext().getContentResolver().query(
                 uri, new String[] { "_id", "name", "apn" },
                 null, null, Telephony.Carriers.DEFAULT_SORT_ORDER);
@@ -2805,7 +2786,7 @@ public class DcTracker extends DcTrackerBase {
             int pos;
             cursor.moveToFirst();
             pos = cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Carriers._ID));
-            for(ApnSetting p : apnList) {
+            for(ApnSetting p : mAllApnSettings) {
                 log("getPreferredApn: apnSetting=" + p);
                 if (p.id == pos && p.canHandleType(mRequestedApnType)) {
                     log("getPreferredApn: X found apnSetting" + p);
@@ -2930,6 +2911,9 @@ public class DcTracker extends DcTrackerBase {
 
             case DctConstants.EVENT_CDMA_SUBSCRIPTION_SOURCE_CHANGED: // fall thru
             case DctConstants.EVENT_DATA_RAT_CHANGED:
+                //May new Network allow setupData, so try it here
+                setupDataOnConnectableApns(Phone.REASON_NW_TYPE_CHANGED,
+                        RetryFailures.ONLY_ON_CHANGE);
                 // When data rat changes we might need to load different
                 // set of apns (example, LTE->1x)
                 if (onUpdateIcc()) {
@@ -2939,10 +2923,6 @@ public class DcTracker extends DcTrackerBase {
                     // If cdma subscription source changed to NV or data rat changed to cdma
                     // (while subscription source was NV) - we need to trigger NV ready
                     onNvReady();
-                } else {
-                    //May new Network allow setupData, so try it here
-                    setupDataOnConnectableApns(Phone.REASON_NW_TYPE_CHANGED,
-                            RetryFailures.ONLY_ON_CHANGE);
                 }
                 break;
 
@@ -2993,7 +2973,7 @@ public class DcTracker extends DcTrackerBase {
         return cid;
     }
 
-    protected IccRecords getUiccRecords(int appFamily) {
+    private IccRecords getUiccRecords(int appFamily) {
         return mUiccController.getIccRecords(mPhone.getPhoneId(), appFamily);
     }
 

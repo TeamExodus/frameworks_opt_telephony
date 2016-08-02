@@ -149,10 +149,6 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
         mRefreshCache = false;
     }
 
-    public boolean isPbrFilePresent() {
-        return mIsPbrPresent;
-    }
-
     public ArrayList<AdnRecord> loadEfFilesFromUsim() {
         synchronized (mLock) {
             if (!mPhoneBookRecords.isEmpty()) {
@@ -527,9 +523,9 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
                     Rlog.e(LOG_TAG, "Error: Improper ICC card: No IAP record for ADN, continuing");
                     break;
                 }
-                int recNum = record[mEmailTagNumberInIap] & 0xFF;
+                int recNum = record[mEmailTagNumberInIap];
 
-                if (recNum != 0xFF && recNum > 0) {
+                if (recNum > 0) {
                     String[] emails = new String[1];
                     // SIM record numbers are 1 based
                     emails[0] = readEmailRecord(recNum - 1, pbrIndex, 0);
@@ -578,8 +574,8 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
                     Rlog.e(LOG_TAG, "Error: Improper ICC card: No IAP record for ADN, continuing");
                     break;
                 }
-                int recNum = record[mAnrTagNumberInIap] & 0xFF;
-                if (recNum != 0xFF && recNum > 0) {
+                int recNum = record[mAnrTagNumberInIap];
+                if (recNum > 0) {
                     String[] anrs = new String[1];
                     // SIM record numbers are 1 based
                     anrs[0] = readAnrRecord(recNum - 1, pbrIndex, 0);
@@ -702,14 +698,8 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
             return null;
         }
 
-        String email;
-        if (mEmailPresentInIap) {
-            //3gpp 31.102 4.4.2.13, in non-type1 EF_EMAIL file,
-            //the length of the record is X+2 byte, where X bytes is the email address
-            email = IccUtils.adnStringFieldToString(emailRec, 0, emailRec.length - 2);
-        } else {
-            email = IccUtils.adnStringFieldToString(emailRec, 0, emailRec.length);
-        }
+        // The length of the record is X+2 byte, where X bytes is the email address
+        String email = IccUtils.adnStringFieldToString(emailRec, 0, emailRec.length - 2);
         return email;
     }
 
@@ -771,9 +761,8 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
             } catch (IndexOutOfBoundsException e) {
                 Rlog.e(LOG_TAG, "IndexOutOfBoundsException in getEmailRecNumber");
             }
-            if (record != null && (record[mEmailTagNumberInIap] & 0xFF) != 0xFF
-                && (record[mEmailTagNumberInIap] & 0xFF) > 0) {
-                recordNumber = record[mEmailTagNumberInIap] & 0xFF;
+            if (record != null && record[mEmailTagNumberInIap] > 0) {
+                recordNumber = record[mEmailTagNumberInIap];
                 log(" getEmailRecNumber: record is " + IccUtils.bytesToHexString(record)
                         + ", the email recordNumber is :" + recordNumber);
                 return recordNumber;
@@ -813,9 +802,8 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
             } catch (IndexOutOfBoundsException e) {
                 Rlog.e(LOG_TAG, "IndexOutOfBoundsException in getAnrRecNumber");
             }
-            if (record != null && (record[mAnrTagNumberInIap] & 0xFF) != 0xFF
-                && (record[mAnrTagNumberInIap] & 0xFF) > 0) {
-                recordNumber = record[mAnrTagNumberInIap] & 0xFF;
+            if (record != null && record[mAnrTagNumberInIap] > 0) {
+                recordNumber = record[mAnrTagNumberInIap];
                 log("getAnrRecNumber: recnum from iap is :" + recordNumber);
                 return recordNumber;
             } else {
@@ -959,8 +947,6 @@ public class UsimPhoneBookManager extends Handler implements IccConstants {
                 ar = (AsyncResult) msg.obj;
                 if (ar.exception == null) {
                     createPbrFile((ArrayList<byte[]>) ar.result);
-                } else {
-                    mIsPbrPresent = false;
                 }
                 synchronized (mLock) {
                     mLock.notify();

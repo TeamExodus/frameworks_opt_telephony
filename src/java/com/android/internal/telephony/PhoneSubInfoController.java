@@ -31,7 +31,6 @@ import java.lang.NullPointerException;
 
 public class PhoneSubInfoController extends IPhoneSubInfo.Stub {
     private static final String TAG = "PhoneSubInfoController";
-
     private static final int PHONE_ID_1 = 0;
 
     private final Phone[] mPhone;
@@ -81,8 +80,6 @@ public class PhoneSubInfoController extends IPhoneSubInfo.Stub {
         return true;
     }
 
-    // The device id should be constant for non-msim applications
-    // so always return device id from first phone.
     public String getDeviceId(String callingPackage) {
         return getDeviceIdForPhone(SubscriptionManager.getPhoneId(getDefaultSubscription()),
                 callingPackage);

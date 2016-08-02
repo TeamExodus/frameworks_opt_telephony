@@ -361,10 +361,7 @@ public class ProxyController {
     private void onStartRadioCapabilityResponse(Message msg) {
         synchronized (mSetRadioAccessFamilyStatus) {
             AsyncResult ar = (AsyncResult)msg.obj;
-            // Abort here only in Single SIM case, in Multi SIM cases
-            // send FINISH with failure so that below layers can do
-            // fall back to proper states.
-            if ((TelephonyManager.getDefault().getPhoneCount() == 1) && (ar.exception != null)) {
+            if (ar.exception != null) {
                 // just abort now.  They didn't take our start so we don't have to revert
                 logd("onStartRadioCapabilityResponse got exception=" + ar.exception);
                 mRadioCapabilitySessionId = mUniqueIdGenerator.getAndIncrement();
@@ -499,7 +496,7 @@ public class ProxyController {
      */
     void onFinishRadioCapabilityResponse(Message msg) {
         RadioCapability rc = (RadioCapability) ((AsyncResult) msg.obj).result;
-        if ((rc != null) && (rc.getSession() != mRadioCapabilitySessionId)) {
+        if ((rc == null) || (rc.getSession() != mRadioCapabilitySessionId)) {
             logd("onFinishRadioCapabilityResponse: Ignore session=" + mRadioCapabilitySessionId
                     + " rc=" + rc);
             return;
@@ -548,10 +545,8 @@ public class ProxyController {
                         i,
                         sessionId,
                         RadioCapability.RC_PHASE_FINISH,
-                        (mTransactionFailed ? mOldRadioAccessFamily[i] :
-                        mNewRadioAccessFamily[i]),
-                        (mTransactionFailed ? mCurrentLogicalModemIds[i] :
-                        mNewLogicalModemIds[i]),
+                        mOldRadioAccessFamily[i],
+                        mCurrentLogicalModemIds[i],
                         (mTransactionFailed ? RadioCapability.RC_STATUS_FAIL :
                         RadioCapability.RC_STATUS_SUCCESS),
                         EVENT_FINISH_RC_RESPONSE);

@@ -38,7 +38,6 @@ import android.provider.Telephony.Sms.Intents;
 import android.telephony.Rlog;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.content.PackageMonitor;
@@ -58,7 +57,6 @@ public final class SmsApplication {
     private static final String BLUETOOTH_PACKAGE_NAME = "com.android.bluetooth";
     private static final String MMS_SERVICE_PACKAGE_NAME = "com.android.mms.service";
     private static final String TELEPHONY_PROVIDER_PACKAGE_NAME = "com.android.providers.telephony";
-    private static final String DEFAULT_SYSTEM_MMS_PACKAGE_NAME = "com.android.messaging";
 
     private static final String SCHEME_SMS = "sms";
     private static final String SCHEME_SMSTO = "smsto";
@@ -737,16 +735,6 @@ public final class SmsApplication {
             return true;
         }
         return false;
-    }
-
-    /**
-     * @hide
-     */
-    public static boolean canSmsAppHandleAlwaysAsk(Context context) {
-        final ComponentName defaultMmsApplication = SmsApplication.getDefaultMmsApplication(context,
-                false);
-        return TextUtils.equals(DEFAULT_SYSTEM_MMS_PACKAGE_NAME,
-                defaultMmsApplication.getPackageName());
     }
 
     private static String getDefaultSmsApplicationPackageName(Context context) {

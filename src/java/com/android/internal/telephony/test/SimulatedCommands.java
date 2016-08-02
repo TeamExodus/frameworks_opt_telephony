@@ -1722,11 +1722,6 @@ public final class SimulatedCommands extends BaseCommands
     }
 
     @Override
-    public void iccOpenLogicalChannel(String AID, byte p2, Message response) {
-        unimplemented(response);
-    }
-
-    @Override
     public void iccCloseLogicalChannel(int channel, Message response) {
         unimplemented(response);
     }
@@ -1796,11 +1791,6 @@ public final class SimulatedCommands extends BaseCommands
     @Override
     public void getModemActivityInfo(Message result) {
         unimplemented(result);
-    }
-
-    @Override
-    public void setMaxTransmitPower(int state, Message response) {
-        unimplemented(response);
     }
 
     public boolean needsOldRilFeature(String feature) { return false; }

@@ -158,19 +158,6 @@ public interface Phone {
 
     int PREFERRED_NT_MODE                = RILConstants.PREFERRED_NETWORK_MODE;
 
-    int NT_MODE_TD_SCDMA_ONLY            = RILConstants.NETWORK_MODE_TDSCDMA_ONLY;
-    int NT_MODE_TD_SCDMA_WCDMA           = RILConstants.NETWORK_MODE_TDSCDMA_WCDMA;
-    int NT_MODE_TD_SCDMA_LTE             = RILConstants.NETWORK_MODE_LTE_TDSCDMA;
-    int NT_MODE_TD_SCDMA_GSM             = RILConstants.NETWORK_MODE_TDSCDMA_GSM;
-    int NT_MODE_TD_SCDMA_GSM_LTE         = RILConstants.NETWORK_MODE_LTE_TDSCDMA_GSM;
-    int NT_MODE_TD_SCDMA_GSM_WCDMA       = RILConstants.NETWORK_MODE_TDSCDMA_GSM_WCDMA;
-    int NT_MODE_TD_SCDMA_WCDMA_LTE       = RILConstants.NETWORK_MODE_LTE_TDSCDMA_WCDMA;
-    int NT_MODE_TD_SCDMA_GSM_WCDMA_LTE   = RILConstants.NETWORK_MODE_LTE_TDSCDMA_GSM_WCDMA;
-    int NT_MODE_TD_SCDMA_GSM_WCDMA_CDMA_EVDO =
-            RILConstants.NETWORK_MODE_TDSCDMA_CDMA_EVDO_GSM_WCDMA;
-    int NT_MODE_TD_SCDMA_LTE_CDMA_EVDO_GSM_WCDMA =
-            RILConstants.NETWORK_MODE_LTE_TDSCDMA_CDMA_EVDO_GSM_WCDMA;
-
     // Used for CDMA roaming mode
     static final int CDMA_RM_HOME        = 0;  // Home Networks only, as defined in PRL
     static final int CDMA_RM_AFFILIATED  = 1;  // Roaming an Affiliated networks, as defined in PRL
@@ -2149,12 +2136,6 @@ public interface Phone {
      */
     public void getModemActivityInfo(Message response);
 
-    /**
-     * Set MAX transmit power state
-     */
-    public void setMaxTransmitPower(int state, Message response);
-
-
     /** Request to update the current local call hold state.
      * @param lchStatus, true if call is in lch state
      */
@@ -2164,47 +2145,4 @@ public interface Phone {
      * Set boolean broadcastEmergencyCallStateChanges
      */
     public void setBroadcastEmergencyCallStateChanges(boolean broadcast);
-
-    /**
-     * getCallForwardingOption
-     * gets a call forwarding option. The return value of
-     * ((AsyncResult)onComplete.obj) is an array of CallForwardInfo.
-     *
-     * @param commandInterfaceCFReason is one of the valid call forwarding
-     *        CF_REASONS, as defined in
-     *        <code>com.android.internal.telephony.CommandsInterface.</code>
-     * @param commandInterfaceServiceClass is one of the valid supplementary
-     *        service class SERVICE_CLASS_* as defined in
-     *        <code>com.android.internal.telephony.CommandsInterface.</code>
-     * @param onComplete a callback message when the action is completed.
-     *        @see com.android.internal.telephony.CallForwardInfo for details.
-     */
-    void getCallForwardingOption(int commandInterfaceCFReason,
-                                 int commandInterfaceServiceClass,
-                                 Message onComplete);
-
-    /**
-     * setCallForwardingOption
-     * sets a call forwarding option.
-     *
-     * @param commandInterfaceCFReason is one of the valid call forwarding
-     *        CF_REASONS, as defined in
-     *        <code>com.android.internal.telephony.CommandsInterface.</code>
-     * @param commandInterfaceCFAction is one of the valid call forwarding
-     *        CF_ACTIONS, as defined in
-     *        <code>com.android.internal.telephony.CommandsInterface.</code>
-     * @param dialingNumber is the target phone number to forward calls to
-     * @param commandInterfaceServiceClass is one of the valid supplementary
-     *        service class SERVICE_CLASS_* as defined in
-     *        <code>com.android.internal.telephony.CommandsInterface.</code>
-     * @param timerSeconds is used by CFNRy to indicate the timeout before
-     *        forwarding is attempted.
-     * @param onComplete a callback message when the action is completed.
-     */
-    void setCallForwardingOption(int commandInterfaceCFReason,
-                                 int commandInterfaceCFAction,
-                                 String dialingNumber,
-                                 int commandInterfaceServiceClass,
-                                 int timerSeconds,
-                                 Message onComplete);
 }

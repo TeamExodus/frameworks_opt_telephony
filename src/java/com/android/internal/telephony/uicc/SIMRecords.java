@@ -1429,14 +1429,11 @@ public class SIMRecords extends IccRecords {
         if (!TextUtils.isEmpty(operator)) {
             log("onAllRecordsLoaded set 'gsm.sim.operator.numeric' to operator='" +
                     operator + "'");
+            log("update icc_operator_numeric=" + operator);
             mTelephonyManager.setSimOperatorNumericForPhone(
                     mParentApp.getPhoneId(), operator);
             final SubscriptionController subController = SubscriptionController.getInstance();
-            int[] subId = subController.getSubId(mParentApp.getPhoneId());
-            if (subId != null && subId.length > 0) {
-                subController.setMccMnc(operator, subId[0]);
-                log("update icc_operator_numeric = " + operator + " subId = " + subId[0]);
-            }
+            subController.setMccMnc(operator, subController.getDefaultSmsSubId());
         } else {
             log("onAllRecordsLoaded empty 'gsm.sim.operator.numeric' skipping");
         }
