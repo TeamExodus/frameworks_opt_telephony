@@ -316,6 +316,7 @@ public final class Telephony {
          * @hide
          */
         public static Cursor query(ContentResolver cr, String[] projection) {
+            android.util.SeempLog.record(10);
             return cr.query(CONTENT_URI, projection, null, null, DEFAULT_SORT_ORDER);
         }
 
@@ -325,6 +326,7 @@ public final class Telephony {
          */
         public static Cursor query(ContentResolver cr, String[] projection,
                 String where, String orderBy) {
+            android.util.SeempLog.record(10);
             return cr.query(CONTENT_URI, projection, where,
                     null, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
         }
@@ -2018,6 +2020,7 @@ public final class Telephony {
          */
         public static Cursor query(
                 ContentResolver cr, String[] projection) {
+            android.util.SeempLog.record(10);
             return cr.query(CONTENT_URI, projection, null, null, DEFAULT_SORT_ORDER);
         }
 
@@ -2028,6 +2031,7 @@ public final class Telephony {
         public static Cursor query(
                 ContentResolver cr, String[] projection,
                 String where, String orderBy) {
+            android.util.SeempLog.record(10);
             return cr.query(CONTENT_URI, projection,
                     where, null, orderBy == null ? DEFAULT_SORT_ORDER : orderBy);
         }
@@ -2822,6 +2826,13 @@ public final class Telephony {
         public static final String EDITED = "edited";
 
         /**
+         * Is this APN visible to the user?
+         * <p>Type: INTEGER (boolean) </p>
+         * @hide
+         */
+        public static final String USER_VISIBLE = "user_visible";
+
+        /**
          * <P>Type: INTEGER (boolean)</P>
          * @hide
          */
@@ -2844,13 +2855,6 @@ public final class Telephony {
          * @hide
          */
         public static final String VISIT_AREA = "visit_area";
-
-        /**
-         * Is this APN visible to the user?
-         * <p>Type: INTEGER (boolean) </p>
-         * @hide
-         */
-        public static final String USER_VISIBLE = "user_visible";
 
         /**
          * Following are possible values for the EDITED field
@@ -2955,7 +2959,7 @@ public final class Telephony {
          * <P>Type: INTEGER</P>
          */
         public static final String SERVICE_CATEGORY = "service_category";
-
+        public static final String MESSAGE_DELETED = "flag_is_deleted";
         /**
          * Message language code.
          * <P>Type: TEXT</P>
@@ -3062,5 +3066,108 @@ public final class Telephony {
                 CMAS_URGENCY,
                 CMAS_CERTAINTY
         };
+    }
+
+    /**
+     * Contains phone numbers that are blacklisted
+     * for phone and/or message purposes.
+     * @hide
+     */
+    public static final class Blacklist implements BaseColumns {
+        /**
+         * The content:// style URL for this table
+         */
+        public static final Uri CONTENT_URI =
+                Uri.parse("content://blacklist");
+
+        /**
+         * The content:// style URL for filtering this table by number.
+         * When using this, make sure the number is correctly encoded
+         * when appended to the Uri.
+         */
+        public static final Uri CONTENT_FILTER_BYNUMBER_URI =
+                Uri.parse("content://blacklist/bynumber");
+
+        /**
+         * The content:// style URL for filtering this table on phone numbers
+         */
+        public static final Uri CONTENT_PHONE_URI =
+                Uri.parse("content://blacklist/phone");
+
+        /**
+         * The content:// style URL for filtering this table on message numbers
+         */
+        public static final Uri CONTENT_MESSAGE_URI =
+                Uri.parse("content://blacklist/message");
+
+
+        /**
+         * Query parameter used to match numbers by regular-expression like
+         * matching. Supported are the '*' and the '.' operators.
+         * <p>
+         * TYPE: boolean
+         */
+        public static final String REGEX_KEY = "regex";
+
+        /**
+         * The default sort order for this table
+         */
+        public static final String DEFAULT_SORT_ORDER = "number ASC";
+
+        /**
+         * The phone number as the user entered it.
+         * <P>Type: TEXT</P>
+         */
+        public static final String NUMBER = "number";
+
+        /**
+         * Whether the number contains a regular expression pattern
+         * <P>Type: BOOLEAN (read only)</P>
+         */
+        public static final String IS_REGEX = "is_regex";
+
+        /**
+         * Blacklisting mode for phone calls
+         * <P>Type: INTEGER (int)</P>
+         */
+        public static final String PHONE_MODE = "phone";
+
+        /**
+         * Blacklisting mode for messages
+         * <P>Type: INTEGER (int)</P>
+         */
+        public static final String MESSAGE_MODE = "message";
+    }
+
+    /**
+     * @hide
+     */
+    public static final class CdmaCallOptions implements BaseColumns {
+        /**
+         * The content:// style URL for this table
+         */
+        public static final Uri CONTENT_URI =
+                Uri.parse("content://cdma/calloption");
+
+        /**
+         * The default sort order for this table
+         */
+        public static final String DEFAULT_SORT_ORDER = "name ASC";
+
+        public static final String NAME = "name";
+
+        public static final String MCC = "mcc";
+
+        public static final String MNC = "mnc";
+
+        public static final String NUMERIC = "numeric";
+
+        public static final String NUMBER = "number";
+
+        public static final String TYPE = "type";
+
+        public static final String CATEGORY = "category";
+
+        public static final String STATE = "state";
     }
 }

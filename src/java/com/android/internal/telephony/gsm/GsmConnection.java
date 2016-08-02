@@ -24,6 +24,7 @@ import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.Registrant;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
 import android.telephony.DisconnectCause;
 import android.telephony.Rlog;
@@ -489,6 +490,9 @@ public class GsmConnection extends Connection {
             case CallFailCause.EMERGENCY_PERM_FAILURE:
                 return DisconnectCause.EMERGENCY_PERM_FAILURE;
 
+            case CallFailCause.NON_SELECTED_USER_CLEARING:
+                return DisconnectCause.NON_SELECTED_USER_CLEARING;
+
             case CallFailCause.ERROR_UNSPECIFIED:
             case CallFailCause.NORMAL_CLEARING:
             default:
@@ -598,7 +602,12 @@ public class GsmConnection extends Connection {
 
         if (Phone.DEBUG_PHONE) log("--dssds----"+mCnapName);
         mCnapNamePresentation = dc.namePresentation;
-        mNumberPresentation = dc.numberPresentation;
+
+        boolean connectedLineIdentification =
+                Settings.Global.getInt(mOwner.mPhone.getContext().getContentResolver(),
+                        Settings.Global.CONNECTED_LINE_IDENTIFICATION, 1) != 0;
+        if (mIsIncoming || connectedLineIdentification)
+            mNumberPresentation = dc.numberPresentation;
 
         if (newParent != mParent) {
             if (mParent != null) {

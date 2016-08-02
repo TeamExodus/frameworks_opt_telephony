@@ -102,6 +102,8 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
     private static final int NITZ_UPDATE_DIFF_DEFAULT = 2000;
     private int mNitzUpdateDiff = SystemProperties.getInt("ro.nitz_update_diff",
             NITZ_UPDATE_DIFF_DEFAULT);
+    /** Time stamp after 19 January 2038 is not supported under 32 bit */
+    private static final int MAX_NITZ_YEAR = 2037;
 
     private int mRoamingIndicator;
     private boolean mIsInPrl;
@@ -591,8 +593,6 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
         String plmn = mSS.getOperatorAlphaLong();
         boolean showPlmn = false;
 
-        showPlmn = plmn != null;
-
         int subId = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
         int[] subIds = SubscriptionManager.getSubId(mPhone.getPhoneId());
         if (subIds != null && subIds.length > 0) {
@@ -614,6 +614,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             // would set showPlmn to true only if plmn was not empty, i.e. was not
             // null and not blank. But this would cause us to incorrectly display
             // "No Service". Now showPlmn is set to true for any non null string.
+            showPlmn = plmn != null;
             if (DBG) {
                 log(String.format("updateSpnDisplay: changed sending intent" +
                             " showPlmn='%b' plmn='%s' subId='%d'", showPlmn, plmn, subId));
@@ -665,7 +666,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
                 if (states.length > 0) {
                     try {
                         regState = Integer.parseInt(states[0]);
-
+    
                         // states[3] (if present) is the current radio technology
                         if (states.length >= 4 && states[3] != null) {
                             dataRadioTechnology = Integer.parseInt(states[3]);
@@ -1438,11 +1439,10 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
         String idd = mHbpcdUtils.getIddByMcc(
                 Integer.parseInt(operatorNumeric.substring(0,3)));
         if (idd != null && !idd.isEmpty()) {
-            mPhone.setSystemProperty(TelephonyProperties.PROPERTY_OPERATOR_IDP_STRING,
-                     idd);
+            SystemProperties.set(TelephonyProperties.PROPERTY_OPERATOR_IDP_STRING, idd);
         } else {
             // use default "+", since we don't know the current IDP
-            mPhone.setSystemProperty(TelephonyProperties.PROPERTY_OPERATOR_IDP_STRING, "+");
+            SystemProperties.set(TelephonyProperties.PROPERTY_OPERATOR_IDP_STRING, "+");
         }
     }
 
@@ -1641,6 +1641,10 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
             String[] nitzSubs = nitz.split("[/:,+-]");
 
             int year = 2000 + Integer.parseInt(nitzSubs[0]);
+            if (year > MAX_NITZ_YEAR) {
+              if (DBG) loge("NITZ year: " + year + " exceeds limit, skip NITZ time update");
+              return;
+            }
             c.set(Calendar.YEAR, year);
 
             // month is 0 based!
@@ -1996,7 +2000,7 @@ public class CdmaServiceStateTracker extends ServiceStateTracker {
         mPhone.mCT.mRingingCall.hangupIfAlive();
         mPhone.mCT.mBackgroundCall.hangupIfAlive();
         mPhone.mCT.mForegroundCall.hangupIfAlive();
-        mCi.setRadioPower(false, null);
+        mCi.setRadioPower(false, obtainMessage(EVENT_RADIO_POWER_OFF_DONE));
     }
 
     protected void parseSidNid (String sidStr, String nidStr) {
