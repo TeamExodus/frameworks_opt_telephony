@@ -1265,9 +1265,10 @@ public class DcTracker extends DcTrackerBase {
         return apn;
     }
 
-    protected ArrayList<ApnSetting> createApnList(Cursor cursor, IccRecords r) {
+    protected ArrayList<ApnSetting> createApnList(Cursor cursor) {
         ArrayList<ApnSetting> mnoApns = new ArrayList<ApnSetting>();
         ArrayList<ApnSetting> mvnoApns = new ArrayList<ApnSetting>();
+        IccRecords r = mIccRecords.get();
 
         if (cursor.moveToFirst()) {
             do {
@@ -2425,7 +2426,7 @@ public class DcTracker extends DcTrackerBase {
 
             if (cursor != null) {
                 if (cursor.getCount() > 0) {
-                    mAllApnSettings = createApnList(cursor, mIccRecords.get());
+                    mAllApnSettings = createApnList(cursor);
                 }
                 cursor.close();
             }
@@ -2445,7 +2446,7 @@ public class DcTracker extends DcTrackerBase {
             // TODO: What is the right behavior?
             //notifyNoData(DataConnection.FailCause.MISSING_UNKNOWN_APN);
         } else {
-            mPreferredApn = getPreferredApn(mAllApnSettings);
+            mPreferredApn = getPreferredApn();
             if (mPreferredApn != null && !mPreferredApn.numeric.equals(operator)) {
                 mPreferredApn = null;
                 setPreferredApn(-1);
@@ -2673,7 +2674,7 @@ public class DcTracker extends DcTrackerBase {
             usePreferred = true;
         }
         if (usePreferred) {
-            mPreferredApn = getPreferredApn(mAllApnSettings);
+            mPreferredApn = getPreferredApn();
         }
         if (DBG) {
             log("buildWaitingApns: usePreferred=" + usePreferred
@@ -2761,9 +2762,9 @@ public class DcTracker extends DcTrackerBase {
         }
     }
 
-    protected ApnSetting getPreferredApn(ArrayList<ApnSetting> apnList) {
-        if (apnList == null || apnList.isEmpty()) {
-            log("getPreferredApn: apnList is " + ((apnList == null)?"null":"empty"));
+    protected ApnSetting getPreferredApn() {
+        if (mAllApnSettings == null || mAllApnSettings.isEmpty()) {
+            log("getPreferredApn: mAllApnSettings is " + ((mAllApnSettings == null)?"null":"empty"));
             return null;
         }
 
@@ -2785,7 +2786,7 @@ public class DcTracker extends DcTrackerBase {
             int pos;
             cursor.moveToFirst();
             pos = cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Carriers._ID));
-            for(ApnSetting p : apnList) {
+            for(ApnSetting p : mAllApnSettings) {
                 log("getPreferredApn: apnSetting=" + p);
                 if (p.id == pos && p.canHandleType(mRequestedApnType)) {
                     log("getPreferredApn: X found apnSetting" + p);
@@ -2972,7 +2973,7 @@ public class DcTracker extends DcTrackerBase {
         return cid;
     }
 
-    protected IccRecords getUiccRecords(int appFamily) {
+    private IccRecords getUiccRecords(int appFamily) {
         return mUiccController.getIccRecords(mPhone.getPhoneId(), appFamily);
     }
 
