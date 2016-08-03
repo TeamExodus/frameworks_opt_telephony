@@ -93,7 +93,6 @@ public class DctController extends Handler {
     private SubscriptionManager mSubMgr;
 
     protected AtomicBoolean[] mIsDataAllowed;
-    protected AtomicBoolean mNeedsDdsSwitch = new AtomicBoolean(false);
 
     private OnSubscriptionsChangedListener mOnSubscriptionsChangedListener =
             new OnSubscriptionsChangedListener() {
@@ -528,7 +527,6 @@ public class DctController extends Handler {
     protected void onSettingsChanged() {
         //Sub Selection
         int dataSubId = mSubController.getDefaultDataSubId();
-        mNeedsDdsSwitch.set(true);
 
         int activePhoneId = -1;
         for (int i=0; i<mDcSwitchStateMachine.length; i++) {
@@ -560,25 +558,13 @@ public class DctController extends Handler {
             if (requestInfo.priority > priority) {
                 priority = requestInfo.priority;
                 topSubId = requestInfo.request.networkCapabilities.getNetworkSpecifier();
-                retRequestInfo = requestInfo;
-            } else if (priority == requestInfo.priority) {
-                if (requestInfo.executedPhoneId == activePhoneId) {
-                    topSubId = requestInfo.request.networkCapabilities.getNetworkSpecifier();
-                    retRequestInfo = requestInfo;
-                }
             }
         }
         if (TextUtils.isEmpty(topSubId)) {
             subId = mSubController.getDefaultDataSubId();
         } else {
             subId = Integer.parseInt(topSubId);
-            if (apnForNetworkRequest(retRequestInfo.request).equals(
-                    PhoneConstants.APN_TYPE_IMS) && mNeedsDdsSwitch.get()) {
-                logd("getTopPriorityRequestPhoneId: ims request, use dds phone id");
-                subId = mSubController.getDefaultDataSubId();
-            }
         }
-
         final int phoneId = mSubController.getPhoneId(subId);
         if (phoneId == DEFAULT_PHONE_INDEX) {
             // that means there isn't a phone for the default sub
@@ -855,14 +841,6 @@ public class DctController extends Handler {
     public boolean isDataAllowedOnPhoneId(int phoneId) {
         return SubscriptionManager.isValidPhoneId(phoneId) &&
                 mIsDataAllowed[phoneId].get();
-    }
-
-    public boolean isDdsSwitchNeeded() {
-        return mNeedsDdsSwitch.get();
-    }
-
-    public void resetDdsSwitchNeededFlag() {
-        mNeedsDdsSwitch.set(false);
     }
 
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
