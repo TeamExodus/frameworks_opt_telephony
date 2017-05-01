@@ -22,8 +22,12 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.telephony.Rlog;
 
+
+import com.android.internal.telephony.EncodeException;
 import com.android.internal.telephony.GsmAlphabet;
+
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 /**
  * Various methods, useful for dealing with SIM data.
@@ -58,6 +62,28 @@ public class IccUtils {
         }
 
         return ret.toString();
+    }
+
+    /**
+     * PLMN (MCC/MNC) is encoded as per 24.008 10.5.1.3
+     * Returns a concatenated string of MCC+MNC, stripping
+     * a trailing character for a 2-digit MNC
+     */
+    public static String bcdPlmnToString(byte[] data, int offset) {
+        if (offset + 3 > data.length) {
+            return null;
+        }
+        byte[] trans = new byte[3];
+        trans[0] = (byte) ((data[0 + offset] << 4) | ((data[0 + offset] >> 4) & 0xF));
+        trans[1] = (byte) ((data[1 + offset] << 4) | (data[2 + offset] & 0xF));
+        trans[2] = (byte) ((data[2 + offset] & 0xF0) | ((data[1 + offset] >> 4) & 0xF));
+        String ret = bytesToHexString(trans);
+
+        // For a 2-digit MNC we trim the trailing 'f'
+        if (ret.endsWith("f")) {
+            ret = ret.substring(0, ret.length() - 1);
+        }
+        return ret;
     }
 
     /**
@@ -543,5 +569,31 @@ public class IccUtils {
                     | ((rawData[valueIndex++] & 0xFF));
         } while (valueIndex < endIndex);
         return result;
+    }
+
+    static byte[]
+    stringToAdnStringField(String alphaTag) {
+        boolean isUcs2 = false;
+        try {
+           for(int i = 0; i < alphaTag.length(); i++) {
+               GsmAlphabet.countGsmSeptets(alphaTag.charAt(i), true);
+           }
+        } catch (EncodeException e) {
+            isUcs2 = true;
+        }
+        return stringToAdnStringField(alphaTag, isUcs2);
+    }
+
+    static byte[]
+    stringToAdnStringField(String alphaTag, boolean isUcs2) {
+        if (!isUcs2) {
+            return GsmAlphabet.stringToGsm8BitPacked(alphaTag);
+        }
+        byte[] alphaTagBytes = alphaTag.getBytes(Charset.forName("UTF-16BE"));
+        byte[] ret = new byte[1 + alphaTagBytes.length];
+        ret[0] = (byte)0x80;
+        System.arraycopy(alphaTagBytes, 0, ret, 1, alphaTagBytes.length);
+
+        return ret;
     }
 }

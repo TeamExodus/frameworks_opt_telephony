@@ -1149,6 +1149,14 @@ public class GsmCdmaPhone extends Phone {
                 && mSST.mSS.getDataRegState() != ServiceState.STATE_IN_SERVICE && !isEmergency) {
             throw new CallStateException("cannot dial in current state");
         }
+        // Check non-emergency voice CS call - shouldn't dial when POWER_OFF
+        if (mSST != null && mSST.mSS.getState() == ServiceState.STATE_POWER_OFF /* CS POWER_OFF */
+                && !VideoProfile.isVideo(videoState) /* voice call */
+                && !isEmergency /* non-emergency call */) {
+            throw new CallStateException(
+                CallStateException.ERROR_POWER_OFF,
+                "cannot dial voice call in airplane mode");
+        }
         if (DBG) logd("Trying (non-IMS) CS call");
 
         if (isPhoneTypeGsm()) {
@@ -1625,6 +1633,12 @@ public class GsmCdmaPhone extends Phone {
         return (action == CF_ACTION_ENABLE) || (action == CF_ACTION_REGISTRATION);
     }
 
+    private boolean isImsUtEnabledOverCdma() {
+        return isPhoneTypeCdmaLte()
+            && mImsPhone != null
+            && mImsPhone.isUtEnabled();
+    }
+
     @Override
     public void getCallForwardingOption(int commandInterfaceCFReason, Message onComplete) {
         getCallForwardingOption(commandInterfaceCFReason,
@@ -1634,7 +1648,7 @@ public class GsmCdmaPhone extends Phone {
     @Override
     public void getCallForwardingOption(int commandInterfaceCFReason,
             int commandInterfaceServiceClass, Message onComplete) {
-        if (isPhoneTypeGsm()) {
+        if (isPhoneTypeGsm() || isImsUtEnabledOverCdma()) {
             Phone imsPhone = mImsPhone;
             if ((imsPhone != null)
                 && ((imsPhone.getServiceState().getState() == ServiceState.STATE_IN_SERVICE)
@@ -1657,7 +1671,7 @@ public class GsmCdmaPhone extends Phone {
                         commandInterfaceServiceClass, null, resp);
             }
         } else {
-            loge("getCallForwardingOption: not possible in CDMA");
+            loge("getCallForwardingOption: not possible in CDMA without IMS");
         }
     }
 
@@ -1681,7 +1695,7 @@ public class GsmCdmaPhone extends Phone {
             int commandInterfaceServiceClass,
             int timerSeconds,
             Message onComplete) {
-        if (isPhoneTypeGsm()) {
+        if (isPhoneTypeGsm() || isImsUtEnabledOverCdma()) {
             Phone imsPhone = mImsPhone;
             if ((imsPhone != null)
                     && ((imsPhone.getServiceState().getState() == ServiceState.STATE_IN_SERVICE)
@@ -1711,7 +1725,7 @@ public class GsmCdmaPhone extends Phone {
                         resp);
             }
         } else {
-            loge("setCallForwardingOption: not possible in CDMA");
+            loge("setCallForwardingOption: not possible in CDMA without IMS");
         }
     }
 
@@ -1928,6 +1942,19 @@ public class GsmCdmaPhone extends Phone {
         if (mPendingMMIs.remove(mmi) || (isPhoneTypeGsm() && (mmi.isUssdRequest() ||
                 ((GsmMmiCode)mmi).isSsInfo()))) {
             mMmiCompleteRegistrants.notifyRegistrants(new AsyncResult(null, mmi, null));
+        }
+    }
+
+    public boolean supports3gppCallForwardingWhileRoaming() {
+        CarrierConfigManager configManager = (CarrierConfigManager)
+                getContext().getSystemService(Context.CARRIER_CONFIG_SERVICE);
+        PersistableBundle b = configManager.getConfig();
+        if (b != null) {
+            return b.getBoolean(
+                    CarrierConfigManager.KEY_SUPPORT_3GPP_CALL_FORWARDING_WHILE_ROAMING_BOOL, true);
+        } else {
+            // Default value set in CarrierConfigManager
+            return true;
         }
     }
 
